@@ -1,7 +1,9 @@
 import org.jacop.constraints.Alldiff;
 import org.jacop.constraints.Constraint;
+import org.jacop.constraints.Distance;
+import org.jacop.constraints.Reified;
 import org.jacop.constraints.Sum;
-import org.jacop.constraints.XmulYeqZ;
+import org.jacop.constraints.XgtC;
 import org.jacop.core.IntVar;
 import org.jacop.core.Store;
 import org.jacop.search.DepthFirstSearch;
@@ -16,16 +18,37 @@ public class App {
 
     public static void main(String[] args) {
 
-        int n = 9;
-        // int n_prefs = 17;
+        /**
+         * Config stuff
+         */
+        int maxDiff = 1;
+
+        // Input 1
+        // int n = 9;
         // int[][] prefs = {{1,3}, {1,5}, {1,8},
         //     {2,5}, {2,9}, {3,4}, {3,5}, {4,1},
         //     {4,5}, {5,6}, {5,1}, {6,1}, {6,9},
         //     {7,3}, {7,8}, {8,9}, {8,7}};
 
-        int[][] prefs = {{1, 3}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 8}, {8, 9}, {9, 4}};
+        // Input 2
+        // int n = 11;
+        // int[][] prefs = {{1,3}, {1,5}, {2,5},
+        //     {2,8}, {2,9}, {3,4}, {3,5}, {4,1},
+        //     {4,5}, {4,6}, {5,1}, {6,1}, {6,9},
+        //     {7,3}, {7,5}, {8,9}, {8,7}, {8,10},
+        //     {9, 11}, {10, 11}};
 
-        int maxDiff = 1;
+        // Input 3
+        int n = 15;
+        int[][] prefs = {{1,3}, {1,5}, {2,5},
+           {2,8}, {2,9}, {3,4}, {3,5}, {4,1},
+           {4,15}, {4,13}, {5,1}, {6,10}, {6,9},
+           {7,3}, {7,5}, {8,9}, {8,7}, {8,14},
+           {9, 13}, {10, 11}};
+
+        /**
+         * End of config
+         */
 
         Store store = new Store();
 
@@ -37,14 +60,6 @@ public class App {
 
         // Define constraints
         store.impose(new Alldiff(vars));
-
-        // for(int[] pref : prefs) {
-        //     int from = pref[0];
-        //     int to = pref[1];
-        //     IntVar dist = new IntVar(store, 0, maxDiff);
-        //     Constraint csr = new Distance(vars[from-1], vars[to-1], dist);
-        //     store.impose(csr);
-        // }
 
         // Define cost function
         // Define one cost per preference
@@ -60,24 +75,13 @@ public class App {
             IntVar from = vars[fromIndex];
             IntVar to = vars[toIndex];
             // Define value of cost variable for this preference
-            int fromValue = from.value();
-            int toValue = to.value();
-            int diff = Math.abs(fromValue - toValue);
 
-            System.out.println(java.util.Arrays.toString(pref));
-            System.out.println(fromValue);
-            System.out.println(toValue);
-            System.out.println();
+            IntVar dist = new IntVar(store, 0, n);
+            Constraint d = new Distance(from, to, dist);
+            store.impose(d);
 
-            IntVar one = new IntVar(store, 1, 1);
-            IntVar zero = new IntVar(store, 0, 0);
-            // If we break preference
-            if(diff > maxDiff) {
-                store.impose( new XmulYeqZ(one, one, costs[i]) );
-            } 
-            else {
-                store.impose( new XmulYeqZ(one, zero, costs[i]) );
-            }
+            Constraint re = new Reified( new XgtC(dist, maxDiff), costs[i]);
+            store.impose(re);
         }
 
         IntVar cost = new IntVar(store, "cost", 0, prefs.length);
@@ -100,6 +104,7 @@ public class App {
         if(result) {
             System.out.println("\n*** Yes!");
             System.out.println("Solution : "+ java.util.Arrays.asList(vars));
+            System.out.println("Satisfied preferences: " + (prefs.length - cost.value()));
 
         } else {
             System.out.println("NOOOO! ");

@@ -27,7 +27,16 @@ constraint forall(i in 1..n_dests)(graph[i, dest[i]] in { graph[i, dest[i]] } un
 % gör subcircuit för varje lösning
 constraint forall( i in 1..n_dests )( subcircuit([graph[i,j] | j in 1..graph_size]));
 
-solve satisfy;
+Define cost
+array[1..n_dests] of var 0..50: global_cost;
+constraint forall( a in 1..n_dests, i in 1..graph_size, j in 1..n_edges )( global_cost[a] = cost[j] );
 
-% May not go to itself
-% forall(i in 1..n_dests, j in 1..graph_size)(graph[i, j] != j);
+% (from[e] = i /\ to[e] = j) \/ ( from[e] = j /\ to[e] = i)
+
+% Define cost for edge for every node
+array[int, int] of int: edge_cost = array2d(1..graph_size, 1..graph_size, [ if exists(e in 1..n_edges)( (from[e] = i /\ to[e] = j) \/ ( from[e] = j /\ to[e] = i) )  then [ cost[e] | e  in 1..n_edges where (from[e] = i /\ to[e] = j) \/ ( from[e] = j /\ to[e] = i) ][1] else 0 endif | i,j in 1..graph_size] );
+
+
+% constraint forall(i in 1..graph_size, j in 1..graph_size)( edge_cost[i, j] in { cost[e] | e in 1..n_edges where from[e] = i /\ to[e] = j} );
+
+solve satisfy;

@@ -33,6 +33,8 @@
 import org.jacop.constraints.Not;
 import org.jacop.constraints.PrimitiveConstraint;
 import org.jacop.constraints.XeqC;
+import org.jacop.constraints.XgteqC;
+import org.jacop.constraints.XlteqC;
 import org.jacop.core.FailException;
 import org.jacop.core.IntDomain;
 import org.jacop.core.IntVar;
@@ -82,14 +84,14 @@ public class SimpleDFS {
 	 * This function is called recursively to assign variables one by one.
 	 */
 	public boolean label(IntVar[] vars) {
-		
+
 		if (trace) {
 			for (int i = 0; i < vars.length; i++)
 				System.out.print(vars[i] + " ");
 			System.out.println();
 		}
 
-		ChoicePoint choice = null;
+		SecondChoicePoint choice = null;
 		boolean consistent;
 
 		// Instead of imposing constraint just restrict bounds
@@ -124,7 +126,7 @@ public class SimpleDFS {
 				return costVariable == null; // true is satisfiability search and false if minimization
 			}
 
-			choice = new ChoicePoint(vars);
+			choice = new SecondChoicePoint(vars);
 
 			levelUp();
 
@@ -235,6 +237,118 @@ public class SimpleDFS {
 		 */
 		public PrimitiveConstraint getConstraint() {
 			return new XeqC(var, value);
+		}
+	}
+
+	public class FirstChoicePoint {
+
+		IntVar var;
+		IntVar[] searchVariables;
+		int value;
+
+		public FirstChoicePoint(IntVar[] v) {
+			var = selectVariable(v);
+			value = selectValue(var);
+		}
+
+		public IntVar[] getSearchVariables() {
+			return searchVariables;
+		}
+
+		/**
+		 * example variable selection; input order
+		 */
+		IntVar selectVariable(IntVar[] v) {
+			if (v.length != 0) {
+
+				if (v[0].min() == v[0].max()) {
+					searchVariables = new IntVar[v.length - 1];
+					for (int i = 0; i < v.length - 1; i++) {
+						searchVariables[i] = v[i + 1];
+					}
+					return v[0];
+				} else {
+					searchVariables = new IntVar[v.length];
+					for (int i = 0; i < v.length; i++) {
+						searchVariables[i] = v[i];
+					}
+					return v[0];
+				}
+
+			} else {
+				System.err.println("Zero length list of variables for labeling");
+				return new IntVar(store);
+			}
+		}
+
+		/**
+		 * example value selection; middle point of domain
+		 */
+		int selectValue(IntVar v) {
+			return (v.max() + v.min()) / 2;
+		}
+
+		/**
+		 * example constraint assigning a stricter constraint
+		 */
+		public PrimitiveConstraint getConstraint() {
+			return new XlteqC(var, value);
+		}
+	}
+
+	public class SecondChoicePoint {
+
+		IntVar var;
+		IntVar[] searchVariables;
+		int value;
+
+		public SecondChoicePoint(IntVar[] v) {
+			var = selectVariable(v);
+			value = selectValue(var);
+		}
+
+		public IntVar[] getSearchVariables() {
+			return searchVariables;
+		}
+
+		/**
+		 * example variable selection; input order
+		 */
+		IntVar selectVariable(IntVar[] v) {
+			if (v.length != 0) {
+
+				if (v[0].min() == v[0].max()) {
+					searchVariables = new IntVar[v.length - 1];
+					for (int i = 0; i < v.length - 1; i++) {
+						searchVariables[i] = v[i + 1];
+					}
+					return v[0];
+				} else {
+					searchVariables = new IntVar[v.length];
+					for (int i = 0; i < v.length; i++) {
+						searchVariables[i] = v[i];
+					}
+					return v[0];
+				}
+
+			} else {
+				System.err.println("Zero length list of variables for labeling");
+				return new IntVar(store);
+			}
+		}
+
+		/**
+		 * example value selection; middle point of domain
+		 */
+		int selectValue(IntVar v) {
+			return (v.max() + v.min() + 1) / 2;
+		}
+
+		/**
+		 * example constraint assigning a stricter constraint
+		 */
+		public PrimitiveConstraint getConstraint() {
+			return new XgteqC(var, value);
 		}
 	}
 }

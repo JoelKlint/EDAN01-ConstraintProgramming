@@ -49,6 +49,9 @@ import org.jacop.core.Store;
 
 public class SimpleDFS {
 
+	int wrongDecisionCount = 0;
+	int searchNodeCount = 0;
+
 	boolean trace = false;
 
 	/**
@@ -90,8 +93,10 @@ public class SimpleDFS {
 				System.out.print(vars[i] + " ");
 			System.out.println();
 		}
-
-		SecondChoicePoint choice = null;
+		
+		// ChoicePoint choice = null;
+		LessThanEqChoicePoint choice = null;
+		// GreatherThanEqChoicePoint choice = null;
 		boolean consistent;
 
 		// Instead of imposing constraint just restrict bounds
@@ -109,8 +114,10 @@ public class SimpleDFS {
 
 		consistent = store.consistency();
 
+		++searchNodeCount;
 		if (!consistent) {
 			// Failed leaf of the search tree
+			++wrongDecisionCount;
 			return false;
 		} else { // consistent
 
@@ -126,7 +133,9 @@ public class SimpleDFS {
 				return costVariable == null; // true is satisfiability search and false if minimization
 			}
 
-			choice = new SecondChoicePoint(vars);
+			// choice = new ChoicePoint(vars);
+			choice = new LessThanEqChoicePoint(vars);
+			// choice = new GreatherThanEqChoicePoint(vars);
 
 			levelUp();
 
@@ -177,6 +186,9 @@ public class SimpleDFS {
 	public void reportSolution() {
 		if (costVariable != null)
 			System.out.println("Cost is " + costVariable);
+
+		System.out.println("Total node search count: " + searchNodeCount);
+		System.out.println("Wrong descisions: " + wrongDecisionCount);
 
 		for (int i = 0; i < variablesToReport.length; i++)
 			System.out.print(variablesToReport[i] + " ");
@@ -240,13 +252,13 @@ public class SimpleDFS {
 		}
 	}
 
-	public class FirstChoicePoint {
+	public class LessThanEqChoicePoint {
 
 		IntVar var;
 		IntVar[] searchVariables;
 		int value;
 
-		public FirstChoicePoint(IntVar[] v) {
+		public LessThanEqChoicePoint(IntVar[] v) {
 			var = selectVariable(v);
 			value = selectValue(var);
 		}
@@ -261,24 +273,101 @@ public class SimpleDFS {
 		IntVar selectVariable(IntVar[] v) {
 			if (v.length != 0) {
 
-				if (v[0].min() == v[0].max()) {
+				/**
+				 * FIND THE VARIABLE WITH THE SMALLEST DOMAIN
+				 */
+				int minDomain = Integer.MAX_VALUE;
+				int index = 0;
+				for (int i = 0; i < v.length; i++) {
+					int domain = domainSize(v[i]);
+					if (domain <= minDomain) {
+						index = i;
+					}
+				}
+
+				IntVar pickedVar = v[index];
+
+				/**
+				 * If the domain is only one value, remove the variable
+				 */
+				if (pickedVar.min() == pickedVar.max()) {
 					searchVariables = new IntVar[v.length - 1];
 					for (int i = 0; i < v.length - 1; i++) {
-						searchVariables[i] = v[i + 1];
+						int otherIndex = i;
+						if (i >= index) {
+							++otherIndex;
+						}
+						searchVariables[i] = v[otherIndex];
 					}
-					return v[0];
-				} else {
+					return pickedVar;
+				} else { // else, keep the variable
 					searchVariables = new IntVar[v.length];
 					for (int i = 0; i < v.length; i++) {
 						searchVariables[i] = v[i];
 					}
-					return v[0];
+					return pickedVar;
 				}
+
+				/**
+				 * FIND THE VARIABLE WITH THE LARGEST DOMAIN
+				 */
+				// int maxDomain = Integer.MIN_VALUE;
+				// int index = 0;
+				// for (int i = 0; i < v.length; i++) {
+				// 	int domain = domainSize(v[i]);
+				// 	if (domain >= maxDomain) {
+				// 		index = i;
+				// 	}
+				// }
+
+				// IntVar pickedVar = v[index];
+
+				// /**
+				//  * If the domain is only one value, remove the variable
+				//  */
+				// if (pickedVar.min() == pickedVar.max()) {
+				// 	searchVariables = new IntVar[v.length - 1];
+				// 	for (int i = 0; i < v.length - 1; i++) {
+				// 		int otherIndex = i;
+				// 		if (i >= index) {
+				// 			++otherIndex;
+				// 		}
+				// 		searchVariables[i] = v[otherIndex];
+				// 	}
+				// 	return pickedVar;
+				// } else { // else, keep the variable
+				// 	searchVariables = new IntVar[v.length];
+				// 	for (int i = 0; i < v.length; i++) {
+				// 		searchVariables[i] = v[i];
+				// 	}
+				// 	return pickedVar;
+				// }
+
+				/**
+				 * PICK FIRST VALUE IN LIST
+				 */
+				// if (v[0].min() == v[0].max()) {
+				// 	searchVariables = new IntVar[v.length - 1];
+				// 	for (int i = 0; i < v.length - 1; i++) {
+				// 		searchVariables[i] = v[i + 1];
+				// 	}
+				// 	return v[0];
+				// } else {
+				// 	searchVariables = new IntVar[v.length];
+				// 	for (int i = 0; i < v.length; i++) {
+				// 		searchVariables[i] = v[i];
+				// 	}
+				// 	return v[0];
+				// }
 
 			} else {
 				System.err.println("Zero length list of variables for labeling");
 				return new IntVar(store);
 			}
+		}
+
+		private int domainSize(IntVar v) {
+			return v.max() - v.min();
 		}
 
 		/**
@@ -296,13 +385,13 @@ public class SimpleDFS {
 		}
 	}
 
-	public class SecondChoicePoint {
+	public class GreatherThanEqChoicePoint {
 
 		IntVar var;
 		IntVar[] searchVariables;
 		int value;
 
-		public SecondChoicePoint(IntVar[] v) {
+		public GreatherThanEqChoicePoint(IntVar[] v) {
 			var = selectVariable(v);
 			value = selectValue(var);
 		}
@@ -317,24 +406,101 @@ public class SimpleDFS {
 		IntVar selectVariable(IntVar[] v) {
 			if (v.length != 0) {
 
-				if (v[0].min() == v[0].max()) {
+				/**
+				 * FIND THE VARIABLE WITH THE SMALLEST DOMAIN
+				 */
+				int minDomain = Integer.MAX_VALUE;
+				int index = 0;
+				for (int i = 0; i < v.length; i++) {
+					int domain = domainSize(v[i]);
+					if (domain <= minDomain) {
+						index = i;
+					}
+				}
+
+				IntVar pickedVar = v[index];
+
+				/**
+				 * If the domain is only one value, remove the variable
+				 */
+				if (pickedVar.min() == pickedVar.max()) {
 					searchVariables = new IntVar[v.length - 1];
 					for (int i = 0; i < v.length - 1; i++) {
-						searchVariables[i] = v[i + 1];
+						int otherIndex = i;
+						if (i >= index) {
+							++otherIndex;
+						}
+						searchVariables[i] = v[otherIndex];
 					}
-					return v[0];
-				} else {
+					return pickedVar;
+				} else { // else, keep the variable
 					searchVariables = new IntVar[v.length];
 					for (int i = 0; i < v.length; i++) {
 						searchVariables[i] = v[i];
 					}
-					return v[0];
+					return pickedVar;
 				}
+
+				/**
+				 * FIND THE VARIABLE WITH THE LARGEST DOMAIN
+				 */
+				// int maxDomain = Integer.MIN_VALUE;
+				// int index = 0;
+				// for (int i = 0; i < v.length; i++) {
+				// 	int domain = domainSize(v[i]);
+				// 	if (domain >= maxDomain) {
+				// 		index = i;
+				// 	}
+				// }
+
+				// IntVar pickedVar = v[index];
+
+				// /**
+				//  * If the domain is only one value, remove the variable
+				//  */
+				// if (pickedVar.min() == pickedVar.max()) {
+				// 	searchVariables = new IntVar[v.length - 1];
+				// 	for (int i = 0; i < v.length - 1; i++) {
+				// 		int otherIndex = i;
+				// 		if (i >= index) {
+				// 			++otherIndex;
+				// 		}
+				// 		searchVariables[i] = v[otherIndex];
+				// 	}
+				// 	return pickedVar;
+				// } else { // else, keep the variable
+				// 	searchVariables = new IntVar[v.length];
+				// 	for (int i = 0; i < v.length; i++) {
+				// 		searchVariables[i] = v[i];
+				// 	}
+				// 	return pickedVar;
+				// }
+
+				/**
+				 * PICK FIRST VALUE IN LIST
+				 */
+				// if (v[0].min() == v[0].max()) {
+				// 	searchVariables = new IntVar[v.length - 1];
+				// 	for (int i = 0; i < v.length - 1; i++) {
+				// 		searchVariables[i] = v[i + 1];
+				// 	}
+				// 	return v[0];
+				// } else {
+				// 	searchVariables = new IntVar[v.length];
+				// 	for (int i = 0; i < v.length; i++) {
+				// 		searchVariables[i] = v[i];
+				// 	}
+				// 	return v[0];
+				// }
 
 			} else {
 				System.err.println("Zero length list of variables for labeling");
 				return new IntVar(store);
 			}
+		}
+
+		private int domainSize(IntVar v) {
+			return v.max() - v.min();
 		}
 
 		/**

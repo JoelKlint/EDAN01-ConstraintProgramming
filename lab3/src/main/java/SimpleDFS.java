@@ -276,46 +276,12 @@ public class SimpleDFS {
 				/**
 				 * FIND THE VARIABLE WITH THE SMALLEST DOMAIN
 				 */
-				int minDomain = Integer.MAX_VALUE;
-				int index = 0;
-				for (int i = 0; i < v.length; i++) {
-					int domain = domainSize(v[i]);
-					if (domain <= minDomain) {
-						index = i;
-					}
-				}
-
-				IntVar pickedVar = v[index];
-
-				/**
-				 * If the domain is only one value, remove the variable
-				 */
-				if (pickedVar.min() == pickedVar.max()) {
-					searchVariables = new IntVar[v.length - 1];
-					for (int i = 0; i < v.length - 1; i++) {
-						int otherIndex = i;
-						if (i >= index) {
-							++otherIndex;
-						}
-						searchVariables[i] = v[otherIndex];
-					}
-					return pickedVar;
-				} else { // else, keep the variable
-					searchVariables = new IntVar[v.length];
-					for (int i = 0; i < v.length; i++) {
-						searchVariables[i] = v[i];
-					}
-					return pickedVar;
-				}
-
-				/**
-				 * FIND THE VARIABLE WITH THE LARGEST DOMAIN
-				 */
-				// int maxDomain = Integer.MIN_VALUE;
+				// int minDomain = Integer.MAX_VALUE;
 				// int index = 0;
 				// for (int i = 0; i < v.length; i++) {
 				// 	int domain = domainSize(v[i]);
-				// 	if (domain >= maxDomain) {
+				// 	if (domain <= minDomain) {
+				// 		minDomain = domain;
 				// 		index = i;
 				// 	}
 				// }
@@ -342,6 +308,42 @@ public class SimpleDFS {
 				// 	}
 				// 	return pickedVar;
 				// }
+
+				/**
+				 * FIND THE VARIABLE WITH THE LARGEST DOMAIN
+				 */
+				int maxDomain = Integer.MIN_VALUE;
+				int index = 0;
+				for (int i = 0; i < v.length; i++) {
+					int domain = domainSize(v[i]);
+					if (domain >= maxDomain) {
+						maxDomain = domain;
+						index = i;
+					}
+				}
+
+				IntVar pickedVar = v[index];
+
+				/**
+				 * If the domain is only one value, remove the variable
+				 */
+				if (pickedVar.min() == pickedVar.max()) {
+					searchVariables = new IntVar[v.length - 1];
+					for (int i = 0; i < v.length - 1; i++) {
+						int otherIndex = i;
+						if (i >= index) {
+							++otherIndex;
+						}
+						searchVariables[i] = v[otherIndex];
+					}
+					return pickedVar;
+				} else { // else, keep the variable
+					searchVariables = new IntVar[v.length];
+					for (int i = 0; i < v.length; i++) {
+						searchVariables[i] = v[i];
+					}
+					return pickedVar;
+				}
 
 				/**
 				 * PICK FIRST VALUE IN LIST
@@ -414,6 +416,7 @@ public class SimpleDFS {
 				for (int i = 0; i < v.length; i++) {
 					int domain = domainSize(v[i]);
 					if (domain <= minDomain) {
+						minDomain = domain;
 						index = i;
 					}
 				}
@@ -449,6 +452,7 @@ public class SimpleDFS {
 				// for (int i = 0; i < v.length; i++) {
 				// 	int domain = domainSize(v[i]);
 				// 	if (domain >= maxDomain) {
+				// 		maxDomain = domain;
 				// 		index = i;
 				// 	}
 				// }
